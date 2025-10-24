@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulation Result - {{ train.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ Conflict Simulation</h1>
+
+    <div class="train-info">
+      <h2>{{ train.name }} ({{ train.number }})</h2>
+      <p><strong>Type:</strong> {{ train.type }}</p>
+      <p><strong>Departure:</strong> {{ train.dep }}</p>
+      <p><strong>Arrival:</strong> {{ train.arr }}</p>
+    </div>
+
+    <div class="result">
+      <h3>Decision Summary</h3>
+      <p>{{ decision | safe }}</p>
+      <p><strong>New Expected Arrival:</strong> {{ new_arrival }}</p>
+    </div>
+
+    {% if halted_trains %}
+    <div class="halted-section">
+      <h3>Halted Trains</h3>
+      <ul>
+        {% for h in halted_trains %}
+          <li>{{ h.halted.name }} halted at {{ h.station }} for {{ h.halt_minutes }} min. New arrival: {{ h.new_arrival }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <a class="back" href="{{ url_for('show_trains', direction=direction) }}">← Back to Train List</a>
+  </div>
+</body>
+</html>

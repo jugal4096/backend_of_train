@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train List - {{ direction.replace('_',' ').title() }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>🚉 Train List ({{ direction.replace('_',' ').title() }})</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Train No</th>
+          <th>Train Name</th>
+          <th>Type</th>
+          <th>Departure</th>
+          <th>Arrival</th>
+          <th>Predict</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for train in trains %}
+        <tr>
+          <td>{{ train.number }}</td>
+          <td>{{ train.name }}</td>
+          <td>{{ train.type }}</td>
+          <td>{{ train.dep }}</td>
+          <td>{{ train.arr }}</td>
+          <td><a class="btn" href="{{ url_for('conflict', direction=direction, train_number=train.number) }}">Simulate</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a class="back" href="{{ url_for('index') }}">← Back to Home</a>
+  </div>
+</body>
+</html>
