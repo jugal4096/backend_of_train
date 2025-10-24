@@ -1,16 +1,17 @@
-from flask import Flask, request, redirect, url_for
-from datetime import datetime, timedelta
+from flask import Flask, request, redirect, url_for, session
 import os
-
 from jalna_to_awb import TRAINS_JALNA_TO_AURANGABAD
 from awb_to_jalna import TRAINS_AURANGABAD_TO_JALNA
 
 app = Flask(__name__)
+app.secret_key = "your_super_secret_key"  # for sessions
+PASSWORD = "4096"  # set your password here
 
 MID_STATION = ["Dinagaoun", "Badnapur", "Karmad", "Chikhalthana"]
 TRAIN_TYPE_PRIORITY = {"VB":6, "JShtb":5, "SF":4, "Exp":3, "DEMU":2, "Pass":1}
 
-# Utility functions
+# ------------------ UTILITY FUNCTIONS ------------------
+
 def hhmm_to_minutes(t):
     h, m = map(int, t.split(":"))
     return h*60 + m
@@ -70,16 +71,118 @@ def simulate_conflicts(selected_train, opposing_trains):
 
     return halted_trains, "<br>".join(lines), selected_train["arr"]
 
-# ---------------- ROUTES ------------------
+# ------------------ ROUTES ------------------
 
 @app.route("/", methods=["GET","POST"])
-def index():
-    if request.method == "POST":
-        direction = request.form["direction"]
-        return redirect(url_for("show_trains", direction=direction))
+def password_page():
+    if "authenticated" in session and session["authenticated"]:
+        return redirect(url_for("index_page"))
+    
+    if request.method=="POST":
+        user_pass = request.form.get("password")
+        if user_pass == PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index_page"))
+        else:
+            return """
+            <html><body style='text-align:center; font-family:Arial;'>
+            <h2 style='color:red; margin-top:50px;'>Incorrect password!</h2>
+            <a href='/'>Try Again</a>
+            </body></html>
+            """
+
+    # Password page with background, gradient, and animations
     return """
     <html>
-    <head><title>Railway Delay Predictor</title></head>
+    <head>
+        <title>Login</title>
+        <style>
+            body {
+                margin:0; padding:0;
+                font-family: Arial, sans-serif;
+                height:100vh;
+                background: url('https://pic.jpg') no-repeat center center fixed;
+                background-size: cover;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+            }
+            .login-box {
+                background: rgba(0,0,0,0.6);
+                padding: 50px;
+                border-radius: 15px;
+                text-align:center;
+                color:white;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                animation: fadeIn 1.2s ease-in-out;
+            }
+            input[type="password"] {
+                padding:12px;
+                width:80%;
+                border-radius:5px;
+                border:none;
+                margin-bottom:20px;
+            }
+            input[type="submit"] {
+                padding:12px 25px;
+                border:none;
+                border-radius:5px;
+                background: #ff6600;
+                color:white;
+                font-weight:bold;
+                cursor:pointer;
+                transition: 0.3s;
+            }
+            input[type="submit"]:hover {
+                background:#ff9900;
+            }
+            h1 {
+                margin-bottom:30px;
+                animation: fadeDown 1s ease;
+            }
+            @keyframes fadeIn {
+                from {opacity:0;}
+                to {opacity:1;}
+            }
+            @keyframes fadeDown {
+                from {opacity:0; transform: translateY(-20px);}
+                to {opacity:1; transform: translateY(0);}
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-box">
+            <h1>Enter Password</h1>
+            <form method="POST">
+                <input type="password" name="password" placeholder="Password" required><br>
+                <input type="submit" value="Enter">
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+
+@app.route("/index", methods=["GET","POST"])
+def index_page():
+    if "authenticated" not in session or not session["authenticated"]:
+        return redirect(url_for("password_page"))
+
+    if request.method=="POST":
+        direction = request.form["direction"]
+        return redirect(url_for("show_trains", direction=direction))
+    
+    return """
+    <html>
+    <head>
+        <title>Railway Delay Predictor</title>
+        <style>
+            body {font-family:Arial; margin:20px; background:#f5f5f5; text-align:center;}
+            h1 {color:#333;}
+            input[type="radio"] {margin:10px;}
+            input[type="submit"] {padding:10px 20px; border-radius:5px; border:none; background:#ff6600; color:white; cursor:pointer; transition:0.3s;}
+            input[type="submit"]:hover {background:#ff9900;}
+        </style>
+    </head>
     <body>
         <h1>Railway Delay Predictor</h1>
         <form method="POST">
@@ -94,15 +197,31 @@ def index():
 
 @app.route("/trains/<direction>")
 def show_trains(direction):
+    if "authenticated" not in session or not session["authenticated"]:
+        return redirect(url_for("password_page"))
+
     trains = TRAINS_JALNA_TO_AURANGABAD if direction=="jalna_to_aurangabad" else TRAINS_AURANGABAD_TO_JALNA
-    html = f"<html><head><title>Trains</title></head><body><h1>Trains ({direction})</h1><ul>"
+    html = f"""
+    <html><head><title>Trains</title>
+    <style>
+        body{{font-family:Arial; text-align:center; margin:20px; background:#f0f0f0;}}
+        a{{color:#ff6600; text-decoration:none;}}
+        a:hover{{color:#ff9900;}}
+        ul{{list-style:none; padding:0;}}
+        li{{margin:10px 0;}}
+    </style></head><body>
+    <h1>Trains ({direction})</h1><ul>
+    """
     for t in trains:
         html += f"<li>{t['name']} ({t['number']}) - <a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
-    html += "</ul><a href='/'>Go Back</a></body></html>"
+    html += "</ul><a href='/index'>Go Back</a></body></html>"
     return html
 
 @app.route("/conflict/<direction>/<train_number>")
 def conflict(direction, train_number):
+    if "authenticated" not in session or not session["authenticated"]:
+        return redirect(url_for("password_page"))
+
     if direction=="jalna_to_aurangabad":
         selected = next((t for t in TRAINS_JALNA_TO_AURANGABAD if t["number"]==train_number), None)
         opposing = TRAINS_AURANGABAD_TO_JALNA
@@ -117,7 +236,15 @@ def conflict(direction, train_number):
 
     html = f"""
     <html>
-    <head><title>Prediction</title></head>
+    <head><title>Prediction</title>
+    <style>
+        body{{font-family:Arial; margin:20px; background:#f0f0f0; text-align:center;}}
+        ul{{list-style:none; padding:0;}}
+        li{{margin:10px 0;}}
+        a{{color:#ff6600; text-decoration:none;}}
+        a:hover{{color:#ff9900;}}
+    </style>
+    </head>
     <body>
         <h1>Prediction for {selected['name']} ({selected['number']})</h1>
         <p>{decision}</p>
@@ -125,13 +252,14 @@ def conflict(direction, train_number):
     """
     for h in halted_trains:
         html += f"<li>{h['halted']['name']} halted at {h['station']} for {h['halt_minutes']} min. New arrival: {h['new_arrival']}</li>"
-    html += "</ul><a href='/trains/{direction}'>Go Back to Trains</a><br><a href='/'>Home</a></body></html>"
+    html += f"</ul><a href='/trains/{direction}'>Go Back to Trains</a><br><a href='/index'>Home</a></body></html>"
 
     return html
 
-# ---------------- RUN APP ------------------
+# ------------------ RUN APP ------------------
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
