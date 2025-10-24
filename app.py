@@ -120,16 +120,20 @@ def password_page():
         <title>Login</title>
         <style>
             body {
-                margin: 0;
-                padding: 0;
-                height: 100vh;
-                background: url("pic.jpg") no-repeat center center/cover;
-                font-family: 'Poppins', sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow: hidden;
-            }
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        background: url("pic.jpg") no-repeat center top/cover;
+        background-position-y: -150px; /* adjust this value up or down */
+        font-family: 'Poppins', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        animation: none;
+        transition: none;
+    }
 
             .login-box {
                 background: rgba(0,0,0,0.6);
@@ -273,5 +277,6 @@ def logout():
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
