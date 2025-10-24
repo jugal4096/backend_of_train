@@ -1,7 +1,8 @@
- from flask import Flask, request, redirect, url_for, session, send_file, make_response
+from flask import Flask, request, redirect, url_for, session, send_file
 import os
 from jalna_to_awb import TRAINS_JALNA_TO_AURANGABAD
 from awb_to_jalna import TRAINS_AURANGABAD_TO_JALNA
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "your_super_secret_key"  # for sessions
@@ -88,17 +89,17 @@ def simulate_conflicts(selected_train, opposing_trains):
 # ------------------ AUTH DECORATOR ------------------
 def login_required(func):
     """Ensure authentication for any route."""
+    @wraps(func)
     def wrapper(*args, **kwargs):
         if "authenticated" not in session or not session["authenticated"]:
             return redirect(url_for("password_page"))
         return func(*args, **kwargs)
-    wrapper.__name__ = func.__name__
     return wrapper
 
 # ------------------ ROUTES ------------------
 @app.route("/", methods=["GET","POST"])
 def password_page():
-    if "authenticated" in session and session["authenticated"]:
+    if session.get("authenticated"):
         return redirect(url_for("index_page"))
 
     if request.method == "POST":
@@ -120,21 +121,17 @@ def password_page():
         <title>Login</title>
         <style>
             body {
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-        width: 100vw;
-        background: url("pic.jpg") no-repeat center top/cover;
-        background-position-y: -150px; /* adjust this value up or down */
-        font-family: 'Poppins', sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        animation: none;
-        transition: none;
-    }
-
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                width: 100vw;
+                background: url("pic.jpg") no-repeat center top/cover;
+                background-position-y: -150px;
+                font-family: 'Poppins', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
             .login-box {
                 background: rgba(0,0,0,0.6);
                 padding: 50px;
@@ -267,7 +264,6 @@ def conflict(direction, train_number):
 
     return html
 
-# ------------------ LOGOUT ROUTE ------------------
 @app.route("/logout")
 def logout():
     session.pop("authenticated", None)
@@ -277,3 +273,4 @@ def logout():
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
