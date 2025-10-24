@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train Conflict Predictor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>🚆 Single Line Railway Operation Simulator</h1>
+    <p>Select the direction of train movement to view train schedules.</p>
+
+    <form method="POST" action="/">
+      <div class="form-group">
+        <label for="direction">Choose Train Direction:</label>
+        <select name="direction" id="direction" required>
+          <option value="">-- Select Direction --</option>
+          <option value="jalna_to_aurangabad">Jalna → Aurangabad</option>
+          <option value="aurangabad_to_jalna">Aurangabad → Jalna</option>
+        </select>
+      </div>
+      <button type="submit">View Trains</button>
+    </form>
+  </div>
+</body>
+</html>
