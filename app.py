@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, session
+from flask import Flask, request, redirect, url_for, session, send_file
 import os
 from jalna_to_awb import TRAINS_JALNA_TO_AURANGABAD
 from awb_to_jalna import TRAINS_AURANGABAD_TO_JALNA
@@ -9,6 +9,12 @@ PASSWORD = "4096"  # set your password here
 
 MID_STATION = ["Dinagaoun", "Badnapur", "Karmad", "Chikhalthana"]
 TRAIN_TYPE_PRIORITY = {"VB":6, "JShtb":5, "SF":4, "Exp":3, "DEMU":2, "Pass":1}
+
+# ------------------ IMAGE ROUTE ------------------
+@app.route("/pic.jpg")
+def serve_pic():
+    """Serve your local pic.jpg without using static folder"""
+    return send_file("pic.jpg", mimetype="image/jpeg")
 
 # ------------------ UTILITY FUNCTIONS ------------------
 
@@ -71,6 +77,17 @@ def simulate_conflicts(selected_train, opposing_trains):
 
     return halted_trains, "<br>".join(lines), selected_train["arr"]
 
+# ------------------ AUTH DECORATOR ------------------
+
+def login_required(func):
+    """Decorator to ensure authentication for any route."""
+    def wrapper(*args, **kwargs):
+        if "authenticated" not in session or not session["authenticated"]:
+            return redirect(url_for("password_page"))
+        return func(*args, **kwargs)
+    wrapper.__name__ = func.__name__
+    return wrapper
+
 # ------------------ ROUTES ------------------
 
 @app.route("/", methods=["GET","POST"])
@@ -91,7 +108,6 @@ def password_page():
             </body></html>
             """
 
-    # Password page with background, gradient, and animations
     return """
     <html>
     <head>
@@ -101,7 +117,7 @@ def password_page():
                 margin:0; padding:0;
                 font-family: Arial, sans-serif;
                 height:100vh;
-                background: url('https://pic.jpg') no-repeat center center fixed;
+                background: url('/pic.jpg') no-repeat center center fixed;
                 background-size: cover;
                 display:flex;
                 justify-content:center;
@@ -133,21 +149,10 @@ def password_page():
                 cursor:pointer;
                 transition: 0.3s;
             }
-            input[type="submit"]:hover {
-                background:#ff9900;
-            }
-            h1 {
-                margin-bottom:30px;
-                animation: fadeDown 1s ease;
-            }
-            @keyframes fadeIn {
-                from {opacity:0;}
-                to {opacity:1;}
-            }
-            @keyframes fadeDown {
-                from {opacity:0; transform: translateY(-20px);}
-                to {opacity:1; transform: translateY(0);}
-            }
+            input[type="submit"]:hover { background:#ff9900; }
+            h1 { margin-bottom:30px; animation: fadeDown 1s ease; }
+            @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+            @keyframes fadeDown { from {opacity:0; transform: translateY(-20px);} to {opacity:1; transform: translateY(0);} }
         </style>
     </head>
     <body>
@@ -163,10 +168,8 @@ def password_page():
     """
 
 @app.route("/index", methods=["GET","POST"])
+@login_required
 def index_page():
-    if "authenticated" not in session or not session["authenticated"]:
-        return redirect(url_for("password_page"))
-
     if request.method=="POST":
         direction = request.form["direction"]
         return redirect(url_for("show_trains", direction=direction))
@@ -196,10 +199,8 @@ def index_page():
     """
 
 @app.route("/trains/<direction>")
+@login_required
 def show_trains(direction):
-    if "authenticated" not in session or not session["authenticated"]:
-        return redirect(url_for("password_page"))
-
     trains = TRAINS_JALNA_TO_AURANGABAD if direction=="jalna_to_aurangabad" else TRAINS_AURANGABAD_TO_JALNA
     html = f"""
     <html><head><title>Trains</title>
@@ -218,10 +219,8 @@ def show_trains(direction):
     return html
 
 @app.route("/conflict/<direction>/<train_number>")
+@login_required
 def conflict(direction, train_number):
-    if "authenticated" not in session or not session["authenticated"]:
-        return redirect(url_for("password_page"))
-
     if direction=="jalna_to_aurangabad":
         selected = next((t for t in TRAINS_JALNA_TO_AURANGABAD if t["number"]==train_number), None)
         opposing = TRAINS_AURANGABAD_TO_JALNA
@@ -260,6 +259,3 @@ def conflict(direction, train_number):
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
-
-
