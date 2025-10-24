@@ -20,7 +20,7 @@
       color: #fff;
     }
 
-    /* Animated gradient background */
+    /* Animated glow background */
     body::before {
       content: "";
       position: absolute;
@@ -116,7 +116,20 @@
       box-shadow: 0 0 30px rgba(0, 234, 255, 0.7);
     }
 
-    /* Floating glowing train icon animation */
+    .message {
+      margin-top: 25px;
+      font-size: 1.1rem;
+      color: #ffde59;
+      font-weight: 500;
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+      animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     h1::before {
       content: "🚆";
       position: relative;
@@ -135,19 +148,59 @@
 <body>
   <div class="container">
     <h1>Single Line Railway Operation Simulator</h1>
-    <p>Select the direction of train movement to view train schedules.</p>
+    <p>Select departure and arrival stations to view schedules.</p>
 
-    <form method="POST" action="/">
+    <form id="stationForm">
       <div class="form-group">
-        <label for="direction">Choose Train Direction:</label>
-        <select name="direction" id="direction" required>
-          <option value="">-- Select Direction --</option>
-          <option value="jalna_to_aurangabad">Jalna → Aurangabad</option>
-          <option value="aurangabad_to_jalna">Aurangabad → Jalna</option>
+        <label for="from">Departure Station:</label>
+        <select id="from" required>
+          <option value="">-- Select Departure --</option>
+          <option value="Jalna">Jalna</option>
+          <option value="Aurangabad">Aurangabad</option>
+          <option value="Mumbai">Mumbai</option>
+          <option value="Delhi">Delhi</option>
+          <option value="Pune">Pune</option>
+          <option value="Chennai">Chennai</option>
+          <option value="Nagpur">Nagpur</option>
+          <option value="Hyderabad">Hyderabad</option>
         </select>
       </div>
+
+      <div class="form-group">
+        <label for="to">Arrival Station:</label>
+        <select id="to" required>
+          <option value="">-- Select Arrival --</option>
+          <option value="Jalna">Jalna</option>
+          <option value="Aurangabad">Aurangabad</option>
+          <option value="Mumbai">Mumbai</option>
+          <option value="Delhi">Delhi</option>
+          <option value="Pune">Pune</option>
+          <option value="Chennai">Chennai</option>
+          <option value="Nagpur">Nagpur</option>
+          <option value="Hyderabad">Hyderabad</option>
+        </select>
+      </div>
+
       <button type="submit">View Trains</button>
     </form>
+
+    <div id="message" class="message"></div>
   </div>
+
+  <script>
+    document.getElementById("stationForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      const messageDiv = document.getElementById("message");
+
+      if ((from === "Jalna" && to === "Aurangabad") || (from === "Aurangabad" && to === "Jalna")) {
+        window.location.href = from === "Jalna" ? "/trains/jalna_to_aurangabad" : "/trains/aurangabad_to_jalna";
+      } else {
+        messageDiv.innerHTML = "🚧 Sorry, we’re working on the <strong>" + from + " → " + to + "</strong> route. Please check back soon!";
+      }
+    });
+  </script>
 </body>
 </html>
