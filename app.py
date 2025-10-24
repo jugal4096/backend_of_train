@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, request, redirect, url_for
 from datetime import datetime, timedelta
 import os
 
@@ -48,9 +48,8 @@ def simulate_conflicts(selected_train, opposing_trains):
     for opp in conflicts:
         opp_score = train_priority(opp)
         if selected_score >= opp_score:
-            # opposing train halts
             new_arr = add_minutes_to_hhmm(opp["arr"], halt_duration)
-            station = MID_STATION[0]  # pick first mid-station for demo
+            station = MID_STATION[0]
             halted_trains.append({
                 "halted": opp,
                 "halt_minutes": halt_duration,
@@ -71,21 +70,36 @@ def simulate_conflicts(selected_train, opposing_trains):
 
     return halted_trains, "<br>".join(lines), selected_train["arr"]
 
-# Routes
+# ---------------- ROUTES ------------------
+
 @app.route("/", methods=["GET","POST"])
 def index():
-    if request.method=="POST":
+    if request.method == "POST":
         direction = request.form["direction"]
         return redirect(url_for("show_trains", direction=direction))
-    return render_template("index.html")
+    return """
+    <html>
+    <head><title>Railway Delay Predictor</title></head>
+    <body>
+        <h1>Railway Delay Predictor</h1>
+        <form method="POST">
+            <label>Select direction:</label><br>
+            <input type="radio" name="direction" value="jalna_to_aurangabad" required> Jalna → Aurangabad<br>
+            <input type="radio" name="direction" value="aurangabad_to_jalna" required> Aurangabad → Jalna<br><br>
+            <input type="submit" value="Show Trains">
+        </form>
+    </body>
+    </html>
+    """
 
 @app.route("/trains/<direction>")
 def show_trains(direction):
-    if direction=="jalna_to_aurangabad":
-        trains = TRAINS_JALNA_TO_AURANGABAD
-    else:
-        trains = TRAINS_AURANGABAD_TO_JALNA
-    return render_template("result.html", trains=trains, direction=direction)
+    trains = TRAINS_JALNA_TO_AURANGABAD if direction=="jalna_to_aurangabad" else TRAINS_AURANGABAD_TO_JALNA
+    html = f"<html><head><title>Trains</title></head><body><h1>Trains ({direction})</h1><ul>"
+    for t in trains:
+        html += f"<li>{t['name']} ({t['number']}) - <a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
+    html += "</ul><a href='/'>Go Back</a></body></html>"
+    return html
 
 @app.route("/conflict/<direction>/<train_number>")
 def conflict(direction, train_number):
@@ -100,15 +114,24 @@ def conflict(direction, train_number):
         return "Train not found", 404
 
     halted_trains, decision, new_arrival = simulate_conflicts(selected, opposing)
-    return render_template(
-        "predict.html",
-        train=selected,
-        halted_trains=halted_trains,
-        decision=decision,
-        new_arrival=new_arrival,
-        direction=direction
-    )
 
+    html = f"""
+    <html>
+    <head><title>Prediction</title></head>
+    <body>
+        <h1>Prediction for {selected['name']} ({selected['number']})</h1>
+        <p>{decision}</p>
+        <ul>
+    """
+    for h in halted_trains:
+        html += f"<li>{h['halted']['name']} halted at {h['station']} for {h['halt_minutes']} min. New arrival: {h['new_arrival']}</li>"
+    html += "</ul><a href='/trains/{direction}'>Go Back to Trains</a><br><a href='/'>Home</a></body></html>"
+
+    return html
+
+# ---------------- RUN APP ------------------
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
+
