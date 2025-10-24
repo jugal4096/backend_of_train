@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, session, send_file
+from flask import Flask, request, redirect, url_for, session, send_file, make_response
 import os
 from jalna_to_awb import TRAINS_JALNA_TO_AURANGABAD
 from awb_to_jalna import TRAINS_AURANGABAD_TO_JALNA
@@ -16,16 +16,24 @@ def serve_pic():
     """Serve your local pic.jpg without using static folder"""
     return send_file("pic.jpg", mimetype="image/jpeg")
 
-# ------------------ UTILITY FUNCTIONS ------------------
+# ------------------ CACHE PREVENTION ------------------
+@app.after_request
+def add_header(response):
+    """Prevent browser caching to enforce session check"""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "-1"
+    return response
 
+# ------------------ UTILITY FUNCTIONS ------------------
 def hhmm_to_minutes(t):
     h, m = map(int, t.split(":"))
     return h*60 + m
 
 def minutes_to_hhmm(m):
     m = m % (24*60)
-    h = m//60
-    mm = m%60
+    h = m // 60
+    mm = m % 60
     return f"{h:02d}:{mm:02d}"
 
 def add_minutes_to_hhmm(time_str, add_min):
@@ -78,9 +86,8 @@ def simulate_conflicts(selected_train, opposing_trains):
     return halted_trains, "<br>".join(lines), selected_train["arr"]
 
 # ------------------ AUTH DECORATOR ------------------
-
 def login_required(func):
-    """Decorator to ensure authentication for any route."""
+    """Ensure authentication for any route."""
     def wrapper(*args, **kwargs):
         if "authenticated" not in session or not session["authenticated"]:
             return redirect(url_for("password_page"))
@@ -89,13 +96,12 @@ def login_required(func):
     return wrapper
 
 # ------------------ ROUTES ------------------
-
 @app.route("/", methods=["GET","POST"])
 def password_page():
     if "authenticated" in session and session["authenticated"]:
         return redirect(url_for("index_page"))
-    
-    if request.method=="POST":
+
+    if request.method == "POST":
         user_pass = request.form.get("password")
         if user_pass == PASSWORD:
             session["authenticated"] = True
@@ -254,6 +260,12 @@ def conflict(direction, train_number):
     html += f"</ul><a href='/trains/{direction}'>Go Back to Trains</a><br><a href='/index'>Home</a></body></html>"
 
     return html
+
+# ------------------ LOGOUT ROUTE ------------------
+@app.route("/logout")
+def logout():
+    session.pop("authenticated", None)
+    return redirect(url_for("password_page"))
 
 # ------------------ RUN APP ------------------
 if __name__=="__main__":
