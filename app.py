@@ -191,11 +191,7 @@ def index_page():
     <head>
         <title>Railway Delay Predictor</title>
         <style>
-            body {font-family:Arial; margin:20px; background:#f5f5f5; text-align:center;}
-            h1 {color:#333;}
-            input[type="radio"] {margin:10px;}
-            input[type="submit"] {padding:10px 20px; border-radius:5px; border:none; background:#ff6600; color:white; cursor:pointer; transition:0.3s;}
-            input[type="submit"]:hover {background:#ff9900;}
+           @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap'); body { margin: 0; padding: 0; height: 100vh; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; overflow: hidden; color: #fff; } /* Animated glow background */ body::before { content: ""; position: absolute; width: 200%; height: 200%; background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1), transparent 40%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1), transparent 40%); animation: moveBg 8s linear infinite alternate; z-index: 0; } @keyframes moveBg { from { transform: translate(0, 0); } to { transform: translate(-100px, -100px); } } .container { position: relative; z-index: 2; text-align: center; background: rgba(255, 255, 255, 0.08); padding: 40px 60px; border-radius: 20px; box-shadow: 0 0 30px rgba(0, 255, 255, 0.2); backdrop-filter: blur(15px); transition: transform 0.4s ease, box-shadow 0.4s ease; } .container:hover { transform: translateY(-10px); box-shadow: 0 0 40px rgba(0, 255, 255, 0.4); } h1 { font-weight: 700; font-size: 1.8rem; color: #00eaff; text-shadow: 0 0 15px rgba(0, 234, 255, 0.6); margin-bottom: 15px; } p { color: #d4f3ff; font-size: 1rem; margin-bottom: 25px; } .form-group { margin-bottom: 20px; } label { display: block; font-size: 1.1rem; font-weight: 500; margin-bottom: 8px; color: #fff; } select { width: 220px; padding: 10px 15px; border: none; border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 1rem; backdrop-filter: blur(10px); outline: none; cursor: pointer; transition: background 0.3s ease; } select:hover { background: rgba(255, 255, 255, 0.2); } button { background: linear-gradient(45deg, #00eaff, #0066ff); color: #fff; padding: 12px 25px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 0 20px rgba(0, 234, 255, 0.5); transition: transform 0.3s ease, box-shadow 0.3s ease; } button:hover { transform: scale(1.08); box-shadow: 0 0 30px rgba(0, 234, 255, 0.7); } .message { margin-top: 25px; font-size: 1.1rem; color: #ffde59; font-weight: 500; text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); animation: fadeIn 1s ease; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } h1::before { content: "🚆"; position: relative; display: inline-block; animation: floatTrain 2s ease-in-out infinite alternate; margin-right: 8px; } @keyframes floatTrain { from { transform: translateY(0); } to { transform: translateY(-5px); } }
         </style>
     </head>
     <body>
@@ -277,6 +273,7 @@ def logout():
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
