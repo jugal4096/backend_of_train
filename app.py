@@ -53,38 +53,40 @@ def find_conflicts(selected_train, opposing_trains, window_before=60):
     return results
 
 def simulate_conflicts(selected_train, opposing_trains):
+    """
+    Predicts whether the selected train will halt at any mid-station.
+    It checks time proximity and type priority. 
+    The selected train may halt for an opposing train if the opposing train has equal or higher priority.
+    """
     conflicts = find_conflicts(selected_train, opposing_trains)
     if not conflicts:
-        return [], f"{selected_train['name']} will arrive on time.", selected_train["arr"]
+        return [], f"{selected_train['name']} runs clear with no conflicts. It will arrive on time.", selected_train["arr"]
 
-    halted_trains = []
-    halt_duration = 10
     selected_score = train_priority(selected_train)
+    halt_duration = 10  # minutes
+    station_index = 0  # choose first mid-station by default (can improve later)
 
+    # find the highest-priority opposing train in conflict window
+    higher_priority_trains = []
     for opp in conflicts:
         opp_score = train_priority(opp)
-        if selected_score >= opp_score:
-            new_arr = add_minutes_to_hhmm(opp["arr"], halt_duration)
-            station = MID_STATION[0]
-            halted_trains.append({
-                "halted": opp,
-                "halt_minutes": halt_duration,
-                "new_arrival": new_arr,
-                "station": station
-            })
-        else:
-            new_arr = add_minutes_to_hhmm(selected_train["arr"], halt_duration)
-            station = MID_STATION[0]
-            return [], f"{selected_train['name']} will halt at {station} for {opp['name']} (10 min delay). New arrival: {new_arr}", new_arr
+        if opp_score >= selected_score:  # if opposing train has equal or higher priority
+            higher_priority_trains.append(opp)
 
-    lines = []
-    for h in halted_trains:
-        lines.append(
-            f"{h['halted']['name']} will halt at {h['station']} for {selected_train['name']} "
-            f"({h['halt_minutes']} min). New arrival: {h['new_arrival']}"
+    if higher_priority_trains:
+        # selected train halts for higher priority train
+        station = MID_STATION[station_index]
+        new_arrival = add_minutes_to_hhmm(selected_train["arr"], halt_duration)
+        opp_names = ", ".join([t["name"] for t in higher_priority_trains])
+        decision = (
+            f"{selected_train['name']} will HALT at {station} for {opp_names} "
+            f"({halt_duration} min delay). New expected arrival: {new_arrival}."
         )
+        return [], decision, new_arrival
+    else:
+        # selected train passes; lower priority trains will wait (but we don’t show that here)
+        return [], f"{selected_train['name']} gets clear passage with no halts. On-time arrival.", selected_train["arr"]
 
-    return halted_trains, "<br>".join(lines), selected_train["arr"]
 
 # ------------------ AUTH DECORATOR ------------------
 def login_required(func):
@@ -273,4 +275,5 @@ def logout():
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
