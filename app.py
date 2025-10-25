@@ -126,44 +126,58 @@ def password_page():
                 margin: 0;
                 padding: 0;
                 height: 100vh;
-                width: 100vw;
-                background: url("pic.jpg") no-repeat center top/cover;
-                background-position-y: -150px;
+                background: linear-gradient(135deg, #001F3F, #003366);
                 font-family: 'Poppins', sans-serif;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                overflow: hidden;
             }
             .login-box {
-                background: rgba(0,0,0,0.6);
+                background: rgba(255, 255, 255, 0.1);
                 padding: 50px;
-                border-radius: 15px;
-                text-align:center;
-                color:white;
-                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                border-radius: 20px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 0 25px rgba(0,0,0,0.5);
+                backdrop-filter: blur(8px);
                 animation: fadeIn 1.2s ease-in-out;
             }
             input[type="password"] {
-                padding:12px;
-                width:80%;
-                border-radius:5px;
-                border:none;
-                margin-bottom:20px;
-            }
-            input[type="submit"] {
-                padding:12px 25px;
-                border:none;
-                border-radius:5px;
-                background: #ff6600;
-                color:white;
-                font-weight:bold;
-                cursor:pointer;
+                padding: 12px;
+                width: 80%;
+                border-radius: 8px;
+                border: none;
+                outline: none;
+                margin-bottom: 20px;
+                background: rgba(255,255,255,0.2);
+                color: white;
+                text-align: center;
                 transition: 0.3s;
             }
-            input[type="submit"]:hover { background:#ff9900; }
-            h1 { margin-bottom:30px; animation: fadeDown 1s ease; }
+            input[type="password"]:focus {
+                background: rgba(255,255,255,0.3);
+            }
+            input[type="submit"] {
+                padding: 12px 25px;
+                border: none;
+                border-radius: 8px;
+                background: linear-gradient(135deg, #ff6600, #ff9900);
+                color: white;
+                font-weight: bold;
+                cursor: pointer;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            input[type="submit"]:hover {
+                transform: scale(1.05);
+                box-shadow: 0 0 15px #ff9900;
+            }
+            h1 {
+                margin-bottom: 25px;
+                animation: slideDown 1s ease;
+            }
             @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-            @keyframes fadeDown { from {opacity:0; transform: translateY(-20px);} to {opacity:1; transform: translateY(0);} }
+            @keyframes slideDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
         </style>
     </head>
     <body>
@@ -275,5 +289,6 @@ def logout():
 if __name__=="__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
