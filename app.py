@@ -1,32 +1,30 @@
 from flask import Flask, request, redirect, url_for, session, send_file
 import os
+from functools import wraps
 from jalna_to_awb import TRAINS_JALNA_TO_AURANGABAD
 from awb_to_jalna import TRAINS_AURANGABAD_TO_JALNA
-from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "your_super_secret_key"  # for sessions
-PASSWORD = "4096"  # set your password here
+app.secret_key = "your_super_secret_key"
+PASSWORD = "4096"
 
 MID_STATION = ["Dinagaoun", "Badnapur", "Karmad", "Chikhalthana"]
 TRAIN_TYPE_PRIORITY = {"VB": 6, "JShtb": 5, "SF": 4, "Exp": 3, "DEMU": 2, "Pass": 1}
 
-# ------------------ IMAGE ROUTE ------------------
+# ---------------- Serve Background ----------------
 @app.route("/pics.jpg")
 def serve_pic():
-    """Serve your local pic.jpg without using static folder"""
     return send_file("pics.jpg", mimetype="image/jpeg")
 
-# ------------------ CACHE PREVENTION ------------------
+# ---------------- Cache Prevention ----------------
 @app.after_request
 def add_header(response):
-    """Prevent browser caching to enforce session check"""
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "-1"
     return response
 
-# ------------------ UTILITY FUNCTIONS ------------------
+# ---------------- Utility ----------------
 def hhmm_to_minutes(t):
     h, m = map(int, t.split(":"))
     return h * 60 + m
@@ -72,116 +70,97 @@ def simulate_conflicts(selected_train, opposing_trains):
         new_arrival = add_minutes_to_hhmm(selected_train["arr"], halt_duration)
         opp_names = ", ".join([t["name"] for t in higher_priority_trains])
         decision = (
-            f"{selected_train['name']} will HALT at {station} for {opp_names} "
-            f"({halt_duration} min delay). New expected arrival: {new_arrival}."
+            f"<b>{selected_train['name']}</b> will HALT at <b>{station}</b> for {opp_names} "
+            f"(<b>{halt_duration} min delay</b>)."
         )
         return [], decision, new_arrival
     else:
-        return [], f"{selected_train['name']} gets clear passage with no halts. On-time arrival.", selected_train["arr"]
+        return [], f"<b>{selected_train['name']}</b> gets clear passage. On-time arrival.", selected_train["arr"]
 
-# ------------------ AUTH DECORATOR ------------------
+# ---------------- Authentication ----------------
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if "authenticated" not in session or not session["authenticated"]:
+        if not session.get("authenticated"):
             return redirect(url_for("password_page"))
         return func(*args, **kwargs)
     return wrapper
 
-# ------------------ ROUTES ------------------
+# ---------------- Login Page ----------------
 @app.route("/", methods=["GET", "POST"])
 def password_page():
     if session.get("authenticated"):
         return redirect(url_for("index_page"))
 
     if request.method == "POST":
-        user_pass = request.form.get("password")
-        if user_pass == PASSWORD:
+        if request.form.get("password") == PASSWORD:
             session["authenticated"] = True
             return redirect(url_for("index_page"))
-        else:
-            return """
-            <html><body style='text-align:center; font-family:Poppins,Arial; background:#001F3F; color:white;'>
-            <h2 style='margin-top:50px;'>❌ Incorrect password!</h2>
-            <a href='/' style='color:#ff6600; text-decoration:none;'>Try Again</a>
-            </body></html>
-            """
+        return "<script>alert('Incorrect Password'); window.location='/'</script>"
 
     return """
     <html>
-    <head>
-        <title>Login</title>
-        <style>
-            body {
-                margin: 0;
-                padding: 0;
-                height: 100vh;
-                background: linear-gradient(135deg, #001F3F, #003366);
-                font-family: 'Poppins', sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow: hidden;
-            }
-            .login-box {
-                background: rgba(255, 255, 255, 0.1);
-                padding: 50px;
-                border-radius: 20px;
-                text-align: center;
-                color: white;
-                box-shadow: 0 0 25px rgba(0,0,0,0.5);
-                backdrop-filter: blur(8px);
-                animation: fadeIn 1.2s ease-in-out;
-            }
-            input[type="password"] {
-                padding: 12px;
-                width: 80%;
-                border-radius: 8px;
-                border: none;
-                outline: none;
-                margin-bottom: 20px;
-                background: rgba(255,255,255,0.2);
-                color: white;
-                text-align: center;
-                transition: 0.3s;
-            }
-            input[type="password"]:focus {
-                background: rgba(255,255,255,0.3);
-            }
-            input[type="submit"] {
-                padding: 12px 25px;
-                border: none;
-                border-radius: 8px;
-                background: linear-gradient(135deg, #ff6600, #ff9900);
-                color: white;
-                font-weight: bold;
-                cursor: pointer;
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-            }
-            input[type="submit"]:hover {
-                transform: scale(1.05);
-                box-shadow: 0 0 15px #ff9900;
-            }
-            h1 {
-                margin-bottom: 25px;
-                animation: slideDown 1s ease;
-            }
-            @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-            @keyframes slideDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
-        </style>
-    </head>
+    <head><title>Login</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('/pics.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        .login-box {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        input[type=password] {
+            padding: 12px;
+            width: 80%;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            text-align: center;
+        }
+        input[type=submit] {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ff6600, #ff9900);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        input[type=submit]:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #ff9900;
+        }
+        h1 { margin-bottom: 25px; color: #ffd700; }
+    </style></head>
     <body>
         <div class="login-box">
-            <h1>🔒 Secure Access</h1>
+            <h1>🚦 AI Railway Access</h1>
             <form method="POST">
-                <input type="password" name="password" placeholder="Enter Password" required><br>
+                <input type="password" name="password" placeholder="Enter Access Password" required><br>
                 <input type="submit" value="Login">
             </form>
         </div>
-    </body>
-    </html>
+    </body></html>
     """
 
+# ---------------- Direction Selection ----------------
 @app.route("/index", methods=["GET", "POST"])
 @login_required
 def index_page():
@@ -190,67 +169,48 @@ def index_page():
         return redirect(url_for("show_trains", direction=direction))
 
     return """
-    <html>
-    <head>
-        <title>Railway Delay Predictor</title>
-        <style>
-            body {
-                font-family: 'Poppins', sans-serif;
-                background: linear-gradient(135deg, #003366, #001F3F);
-                color: white;
-                text-align: center;
-                margin: 0;
-                height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-            .container {
-                background: rgba(255,255,255,0.1);
-                padding: 40px 60px;
-                border-radius: 20px;
-                box-shadow: 0 0 20px rgba(0,0,0,0.4);
-                backdrop-filter: blur(8px);
-            }
-            h1 { margin-bottom: 25px; color: #ffcc66; }
-            input[type="radio"] {
-                margin: 10px;
-                transform: scale(1.2);
-            }
-            label {
-                font-size: 18px;
-            }
-            input[type="submit"] {
-                margin-top: 25px;
-                padding: 12px 30px;
-                border-radius: 10px;
-                border: none;
-                background: linear-gradient(135deg, #ff6600, #ff9900);
-                color: white;
-                font-weight: bold;
-                cursor: pointer;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-            }
-            input[type="submit"]:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 0 15px #ff9900;
-            }
-        </style>
-    </head>
+    <html><head><title>Direction</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #001F3F, #004080);
+            color: white;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 40px 60px;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+        }
+        input[type=radio] { margin: 10px; transform: scale(1.2); }
+        input[type=submit] {
+            margin-top: 20px; padding: 12px 25px;
+            border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #ff6600, #ff9900);
+            color: white; font-weight: bold; cursor: pointer;
+        }
+        input[type=submit]:hover { box-shadow: 0 0 10px #ff9900; }
+        h1 { color: #00bfff; }
+    </style></head>
     <body>
         <div class="container">
             <h1>🚆 Railway Delay Predictor</h1>
             <form method="POST">
-                <label>Select direction:</label><br><br>
-                <input type="radio" name="direction" value="jalna_to_aurangabad" required> Jalna → Aurangabad<br>
-                <input type="radio" name="direction" value="aurangabad_to_jalna" required> Aurangabad → Jalna<br><br>
-                <input type="submit" value="Show Trains">
+                <label><input type="radio" name="direction" value="jalna_to_aurangabad" required> Jalna → Aurangabad</label><br>
+                <label><input type="radio" name="direction" value="aurangabad_to_jalna" required> Aurangabad → Jalna</label><br>
+                <input type="submit" value="Continue">
             </form>
         </div>
-    </body>
-    </html>
+    </body></html>
     """
 
+# ---------------- Train List ----------------
 @app.route("/trains/<direction>")
 @login_required
 def show_trains(direction):
@@ -259,51 +219,34 @@ def show_trains(direction):
     <html><head><title>Trains</title>
     <style>
         body {{
-            font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #001F3F, #003366);
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 30px;
+            color: white; text-align: center; font-family: 'Poppins', sans-serif;
         }}
-        h1 {{ color: #ffcc66; margin-bottom: 30px; }}
+        h1 {{ color: #00bfff; margin: 20px 0; }}
         ul {{ list-style: none; padding: 0; }}
         li {{
-            margin: 10px auto;
             background: rgba(255,255,255,0.1);
-            width: 60%;
-            padding: 15px;
-            border-radius: 10px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 60%; margin: 10px auto; padding: 15px;
+            border-radius: 10px; transition: 0.3s;
         }}
-        li:hover {{
-            transform: translateY(-5px);
-            box-shadow: 0 0 10px #ff9900;
-        }}
-        a {{ color: #ff9900; text-decoration: none; font-weight: bold; }}
-        a:hover {{ color: #ffd480; }}
-        .back {{
-            display: inline-block;
-            margin-top: 30px;
-            padding: 10px 20px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #ff6600, #ff9900);
-            color: white;
-            text-decoration: none;
-            transition: 0.3s;
-        }}
-        .back:hover {{ box-shadow: 0 0 10px #ff9900; }}
+        li:hover {{ transform: translateY(-5px); box-shadow: 0 0 10px #ff9900; }}
+        a {{ color: #ffd700; text-decoration: none; }}
+        .back {{ color: #fff; background: linear-gradient(135deg, #ff6600, #ff9900);
+            padding: 10px 20px; border-radius: 8px; text-decoration: none; }}
     </style></head><body>
-    <h1>🚉 Trains ({direction.replace('_',' ').title()})</h1><ul>
+    <h1>🚉 {direction.replace('_',' ').title()}</h1><ul>
     """
     for t in trains:
-        html += f"<li>{t['name']} ({t['number']}) — <a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
-    html += "</ul><a href='/index' class='back'>⬅ Go Back</a></body></html>"
+        html += f"<li><b>{t['name']}</b> ({t['number']})<br>Type: {t['type']}<br>Dep: {t['dep']} | Arr: {t['arr']}<br><a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
+    html += "</ul><a href='/index' class='back'>⬅ Back</a></body></html>"
     return html
 
+# ---------------- Prediction ----------------
 @app.route("/conflict/<direction>/<train_number>")
 @login_required
 def conflict(direction, train_number):
+    selected = None
+    opposing = []
     if direction == "jalna_to_aurangabad":
         selected = next((t for t in TRAINS_JALNA_TO_AURANGABAD if t["number"] == train_number), None)
         opposing = TRAINS_AURANGABAD_TO_JALNA
@@ -316,44 +259,45 @@ def conflict(direction, train_number):
 
     halted_trains, decision, new_arrival = simulate_conflicts(selected, opposing)
 
-    html = f"""
-    <html>
-    <head><title>Prediction</title>
+    return f"""
+    <html><head><title>Prediction</title>
     <style>
         body {{
-            font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #001F3F, #003366);
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 40px;
+            color: white; font-family: 'Poppins', sans-serif; text-align: center;
+            padding: 50px;
         }}
-        h1 {{ color: #ffcc66; margin-bottom: 20px; }}
-        p {{ background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; width: 60%; margin: auto; }}
-        ul {{ list-style: none; padding: 0; margin-top: 20px; }}
-        li {{ margin: 10px auto; background: rgba(255,255,255,0.05); padding: 10px; width: 50%; border-radius: 10px; }}
+        .info {{
+            background: rgba(255,255,255,0.1);
+            padding: 20px; border-radius: 10px; margin-bottom: 20px;
+        }}
+        .info strong {{ color: #ffd700; }}
+        .decision {{
+            background: rgba(0,255,0,0.1); border-left: 4px solid #32cd32;
+            padding: 15px; border-radius: 10px; margin-top: 15px;
+        }}
         a {{
-            display: inline-block;
-            margin: 20px 10px;
-            padding: 10px 20px;
-            border-radius: 10px;
+            display: inline-block; margin: 20px 10px;
+            padding: 10px 20px; border-radius: 10px;
             background: linear-gradient(135deg, #ff6600, #ff9900);
-            color: white;
-            text-decoration: none;
-            transition: 0.3s;
+            color: white; text-decoration: none;
         }}
         a:hover {{ box-shadow: 0 0 10px #ff9900; }}
-    </style>
-    </head>
+    </style></head>
     <body>
         <h1>🚆 Prediction for {selected['name']} ({selected['number']})</h1>
-        <p>{decision}</p>
-        <ul>
+        <div class='info'>
+            <p><strong>Train Type:</strong> {selected['type']}</p>
+            <p><strong>Scheduled Departure:</strong> {selected['dep']} | <strong>Scheduled Arrival:</strong> {selected['arr']}</p>
+        </div>
+        <div class='decision'>
+            <p>{decision}</p>
+            <p><strong>Predicted Arrival:</strong> {new_arrival}</p>
+        </div>
+        <a href='/trains/{direction}'>⬅ Back</a>
+        <a href='/index'>🏠 Home</a>
+    </body></html>
     """
-    for h in halted_trains:
-        html += f"<li>{h['halted']['name']} halted at {h['station']} for {h['halt_minutes']} min. New arrival: {h['new_arrival']}</li>"
-    html += f"</ul><a href='/trains/{direction}'>⬅ Back to Trains</a><a href='/index'>🏠 Home</a></body></html>"
-    return html
 
 @app.route("/logout")
 def logout():
@@ -363,4 +307,3 @@ def logout():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
