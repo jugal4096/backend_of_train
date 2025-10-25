@@ -9,7 +9,7 @@ app.secret_key = "your_super_secret_key"  # for sessions
 PASSWORD = "4096"  # set your password here
 
 MID_STATION = ["Dinagaoun", "Badnapur", "Karmad", "Chikhalthana"]
-TRAIN_TYPE_PRIORITY = {"VB":6, "JShtb":5, "SF":4, "Exp":3, "DEMU":2, "Pass":1}
+TRAIN_TYPE_PRIORITY = {"VB": 6, "JShtb": 5, "SF": 4, "Exp": 3, "DEMU": 2, "Pass": 1}
 
 # ------------------ IMAGE ROUTE ------------------
 @app.route("/pic.jpg")
@@ -29,10 +29,10 @@ def add_header(response):
 # ------------------ UTILITY FUNCTIONS ------------------
 def hhmm_to_minutes(t):
     h, m = map(int, t.split(":"))
-    return h*60 + m
+    return h * 60 + m
 
 def minutes_to_hhmm(m):
-    m = m % (24*60)
+    m = m % (24 * 60)
     h = m // 60
     mm = m % 60
     return f"{h:02d}:{mm:02d}"
@@ -53,28 +53,21 @@ def find_conflicts(selected_train, opposing_trains, window_before=60):
     return results
 
 def simulate_conflicts(selected_train, opposing_trains):
-    """
-    Predicts whether the selected train will halt at any mid-station.
-    It checks time proximity and type priority. 
-    The selected train may halt for an opposing train if the opposing train has equal or higher priority.
-    """
     conflicts = find_conflicts(selected_train, opposing_trains)
     if not conflicts:
         return [], f"{selected_train['name']} runs clear with no conflicts. It will arrive on time.", selected_train["arr"]
 
     selected_score = train_priority(selected_train)
-    halt_duration = 10  # minutes
-    station_index = 0  # choose first mid-station by default (can improve later)
+    halt_duration = 10
+    station_index = 0
 
-    # find the highest-priority opposing train in conflict window
     higher_priority_trains = []
     for opp in conflicts:
         opp_score = train_priority(opp)
-        if opp_score >= selected_score:  # if opposing train has equal or higher priority
+        if opp_score >= selected_score:
             higher_priority_trains.append(opp)
 
     if higher_priority_trains:
-        # selected train halts for higher priority train
         station = MID_STATION[station_index]
         new_arrival = add_minutes_to_hhmm(selected_train["arr"], halt_duration)
         opp_names = ", ".join([t["name"] for t in higher_priority_trains])
@@ -84,13 +77,10 @@ def simulate_conflicts(selected_train, opposing_trains):
         )
         return [], decision, new_arrival
     else:
-        # selected train passes; lower priority trains will wait (but we don’t show that here)
         return [], f"{selected_train['name']} gets clear passage with no halts. On-time arrival.", selected_train["arr"]
-
 
 # ------------------ AUTH DECORATOR ------------------
 def login_required(func):
-    """Ensure authentication for any route."""
     @wraps(func)
     def wrapper(*args, **kwargs):
         if "authenticated" not in session or not session["authenticated"]:
@@ -99,7 +89,7 @@ def login_required(func):
     return wrapper
 
 # ------------------ ROUTES ------------------
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def password_page():
     if session.get("authenticated"):
         return redirect(url_for("index_page"))
@@ -111,9 +101,9 @@ def password_page():
             return redirect(url_for("index_page"))
         else:
             return """
-            <html><body style='text-align:center; font-family:Arial;'>
-            <h2 style='color:red; margin-top:50px;'>Incorrect password!</h2>
-            <a href='/'>Try Again</a>
+            <html><body style='text-align:center; font-family:Poppins,Arial; background:#001F3F; color:white;'>
+            <h2 style='margin-top:50px;'>❌ Incorrect password!</h2>
+            <a href='/' style='color:#ff6600; text-decoration:none;'>Try Again</a>
             </body></html>
             """
 
@@ -182,43 +172,81 @@ def password_page():
     </head>
     <body>
         <div class="login-box">
-            <h1>Enter Password</h1>
+            <h1>🔒 Secure Access</h1>
             <form method="POST">
-                <input type="password" name="password" placeholder="Password" required><br>
-                <input type="submit" value="Enter">
+                <input type="password" name="password" placeholder="Enter Password" required><br>
+                <input type="submit" value="Login">
             </form>
         </div>
     </body>
     </html>
     """
 
-@app.route("/index", methods=["GET","POST"])
+@app.route("/index", methods=["GET", "POST"])
 @login_required
 def index_page():
-    if request.method=="POST":
+    if request.method == "POST":
         direction = request.form["direction"]
         return redirect(url_for("show_trains", direction=direction))
-    
+
     return """
     <html>
     <head>
         <title>Railway Delay Predictor</title>
         <style>
-            body {font-family:Arial; margin:20px; background:#f5f5f5; text-align:center;}
-            h1 {color:#333;}
-            input[type="radio"] {margin:10px;}
-            input[type="submit"] {padding:10px 20px; border-radius:5px; border:none; background:#ff6600; color:white; cursor:pointer; transition:0.3s;}
-            input[type="submit"]:hover {background:#ff9900;}
+            body {
+                font-family: 'Poppins', sans-serif;
+                background: linear-gradient(135deg, #003366, #001F3F);
+                color: white;
+                text-align: center;
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .container {
+                background: rgba(255,255,255,0.1);
+                padding: 40px 60px;
+                border-radius: 20px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.4);
+                backdrop-filter: blur(8px);
+            }
+            h1 { margin-bottom: 25px; color: #ffcc66; }
+            input[type="radio"] {
+                margin: 10px;
+                transform: scale(1.2);
+            }
+            label {
+                font-size: 18px;
+            }
+            input[type="submit"] {
+                margin-top: 25px;
+                padding: 12px 30px;
+                border-radius: 10px;
+                border: none;
+                background: linear-gradient(135deg, #ff6600, #ff9900);
+                color: white;
+                font-weight: bold;
+                cursor: pointer;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            input[type="submit"]:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 0 15px #ff9900;
+            }
         </style>
     </head>
     <body>
-        <h1>Railway Delay Predictor</h1>
-        <form method="POST">
-            <label>Select direction:</label><br>
-            <input type="radio" name="direction" value="jalna_to_aurangabad" required> Jalna → Aurangabad<br>
-            <input type="radio" name="direction" value="aurangabad_to_jalna" required> Aurangabad → Jalna<br><br>
-            <input type="submit" value="Show Trains">
-        </form>
+        <div class="container">
+            <h1>🚆 Railway Delay Predictor</h1>
+            <form method="POST">
+                <label>Select direction:</label><br><br>
+                <input type="radio" name="direction" value="jalna_to_aurangabad" required> Jalna → Aurangabad<br>
+                <input type="radio" name="direction" value="aurangabad_to_jalna" required> Aurangabad → Jalna<br><br>
+                <input type="submit" value="Show Trains">
+            </form>
+        </div>
     </body>
     </html>
     """
@@ -226,31 +254,61 @@ def index_page():
 @app.route("/trains/<direction>")
 @login_required
 def show_trains(direction):
-    trains = TRAINS_JALNA_TO_AURANGABAD if direction=="jalna_to_aurangabad" else TRAINS_AURANGABAD_TO_JALNA
+    trains = TRAINS_JALNA_TO_AURANGABAD if direction == "jalna_to_aurangabad" else TRAINS_AURANGABAD_TO_JALNA
     html = f"""
     <html><head><title>Trains</title>
     <style>
-        body{{font-family:Arial; text-align:center; margin:20px; background:#f0f0f0;}}
-        a{{color:#ff6600; text-decoration:none;}}
-        a:hover{{color:#ff9900;}}
-        ul{{list-style:none; padding:0;}}
-        li{{margin:10px 0;}}
+        body {{
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #001F3F, #003366);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 30px;
+        }}
+        h1 {{ color: #ffcc66; margin-bottom: 30px; }}
+        ul {{ list-style: none; padding: 0; }}
+        li {{
+            margin: 10px auto;
+            background: rgba(255,255,255,0.1);
+            width: 60%;
+            padding: 15px;
+            border-radius: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }}
+        li:hover {{
+            transform: translateY(-5px);
+            box-shadow: 0 0 10px #ff9900;
+        }}
+        a {{ color: #ff9900; text-decoration: none; font-weight: bold; }}
+        a:hover {{ color: #ffd480; }}
+        .back {{
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff6600, #ff9900);
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }}
+        .back:hover {{ box-shadow: 0 0 10px #ff9900; }}
     </style></head><body>
-    <h1>Trains ({direction})</h1><ul>
+    <h1>🚉 Trains ({direction.replace('_',' ').title()})</h1><ul>
     """
     for t in trains:
-        html += f"<li>{t['name']} ({t['number']}) - <a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
-    html += "</ul><a href='/index'>Go Back</a></body></html>"
+        html += f"<li>{t['name']} ({t['number']}) — <a href='/conflict/{direction}/{t['number']}'>Predict Delay</a></li>"
+    html += "</ul><a href='/index' class='back'>⬅ Go Back</a></body></html>"
     return html
 
 @app.route("/conflict/<direction>/<train_number>")
 @login_required
 def conflict(direction, train_number):
-    if direction=="jalna_to_aurangabad":
-        selected = next((t for t in TRAINS_JALNA_TO_AURANGABAD if t["number"]==train_number), None)
+    if direction == "jalna_to_aurangabad":
+        selected = next((t for t in TRAINS_JALNA_TO_AURANGABAD if t["number"] == train_number), None)
         opposing = TRAINS_AURANGABAD_TO_JALNA
     else:
-        selected = next((t for t in TRAINS_AURANGABAD_TO_JALNA if t["number"]==train_number), None)
+        selected = next((t for t in TRAINS_AURANGABAD_TO_JALNA if t["number"] == train_number), None)
         opposing = TRAINS_JALNA_TO_AURANGABAD
 
     if not selected:
@@ -262,22 +320,39 @@ def conflict(direction, train_number):
     <html>
     <head><title>Prediction</title>
     <style>
-        body{{font-family:Arial; margin:20px; background:#f0f0f0; text-align:center;}}
-        ul{{list-style:none; padding:0;}}
-        li{{margin:10px 0;}}
-        a{{color:#ff6600; text-decoration:none;}}
-        a:hover{{color:#ff9900;}}
+        body {{
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #001F3F, #003366);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 40px;
+        }}
+        h1 {{ color: #ffcc66; margin-bottom: 20px; }}
+        p {{ background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; width: 60%; margin: auto; }}
+        ul {{ list-style: none; padding: 0; margin-top: 20px; }}
+        li {{ margin: 10px auto; background: rgba(255,255,255,0.05); padding: 10px; width: 50%; border-radius: 10px; }}
+        a {{
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff6600, #ff9900);
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }}
+        a:hover {{ box-shadow: 0 0 10px #ff9900; }}
     </style>
     </head>
     <body>
-        <h1>Prediction for {selected['name']} ({selected['number']})</h1>
+        <h1>🚆 Prediction for {selected['name']} ({selected['number']})</h1>
         <p>{decision}</p>
         <ul>
     """
     for h in halted_trains:
         html += f"<li>{h['halted']['name']} halted at {h['station']} for {h['halt_minutes']} min. New arrival: {h['new_arrival']}</li>"
-    html += f"</ul><a href='/trains/{direction}'>Go Back to Trains</a><br><a href='/index'>Home</a></body></html>"
-
+    html += f"</ul><a href='/trains/{direction}'>⬅ Back to Trains</a><a href='/index'>🏠 Home</a></body></html>"
     return html
 
 @app.route("/logout")
@@ -285,10 +360,6 @@ def logout():
     session.pop("authenticated", None)
     return redirect(url_for("password_page"))
 
-# ------------------ RUN APP ------------------
-if __name__=="__main__":
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
-
-
