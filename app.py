@@ -12,7 +12,7 @@ MID_STATION = ["Dinagaoun", "Badnapur", "Karmad", "Chikhalthana"]
 TRAIN_TYPE_PRIORITY = {"VB": 6, "JShtb": 5, "SF": 4, "Exp": 3, "DEMU": 2, "Pass": 1}
 
 # ------------------ IMAGE ROUTE ------------------
-@app.route("/pic.jpg")
+@app.route("/pics.jpg")
 def serve_pic():
     """Serve your local pic.jpg without using static folder"""
     return send_file("pics.jpg", mimetype="image/jpeg")
@@ -363,3 +363,4 @@ def logout():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
